@@ -6,51 +6,43 @@ from datetime import datetime
 def generate_sensor_data():
     """
     Simulates raw sensor readings from a CNC machine.
-    Values are loosely based on the AI4I 2020 dataset distributions.
+    Ranges are based on the AI4I 2020 dataset distributions.
     """
-    # 1. Base sensor values
-    air_temp = random.uniform(295.0, 305.0)  # [K]
-    process_temp = air_temp + random.uniform(10.0, 12.0)  # [K]
-    rotational_speed = random.uniform(1300, 1600)  # [rpm]
-    torque = random.uniform(30.0, 60.0)  # [Nm]
-    tool_wear = random.uniform(0, 250)  # [min]
-    
-    # 2. Feature Engineering (Important: The model expects these 8 features)
-    temp_diff = process_temp - air_temp
-    stress_index = torque / (rotational_speed + 1e-5)
-    torque_wear = torque * tool_wear
-    
-    # 3. Create the JSON-like dictionary
-    data_point = {
-        "timestamp": datetime.now().strftime("%H:%M:%S"),
-        "Air temperature [K]": round(air_temp, 2),
-        "Process temperature [K]": round(process_temp, 2),
-        "Rotational speed [rpm]": round(rotational_speed, 2),
-        "Torque [Nm]": round(torque, 2),
-        "Tool wear [min]": round(tool_wear, 2),
-        "temp_diff": round(temp_diff, 2),
-        "stress_index": round(stress_index, 6),
-        "torque_wear": round(torque_wear, 2)
-    }
-    return data_point
+    while True:
+        # 1. Generate Raw Sensor Values
+        air_temp = random.uniform(295.0, 305.0)       # Air temperature [K]
+        process_temp = air_temp + random.uniform(10, 12) # Process temperature [K]
+        rotational_speed = random.uniform(1300, 1600)   # Rotational speed [rpm]
+        torque = random.uniform(30.0, 60.0)             # Torque [Nm]
+        tool_wear = random.uniform(0, 250)              # Tool wear [min]
+        
+        # 2. Format as a JSON-compatible dictionary
+        data_point = {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Air temperature [K]": round(air_temp, 2),
+            "Process temperature [K]": round(process_temp, 2),
+            "Rotational speed [rpm]": round(rotational_speed, 1),
+            "Torque [Nm]": round(torque, 2),
+            "Tool wear [min]": round(tool_wear, 2)
+        }
+        
+        # 3. Yield the data (Iteratable stream)
+        yield data_point
+        
+        # 4. Heartbeat: 1-second interval
+        time.sleep(1)
 
-def stream_data():
-    print("🚀 Sensor stream started... Press Ctrl+C to stop.")
+def run_simulator():
+    print("🚀 Starting Production Sensor Stream (Press Ctrl+C to stop)...")
+    print("Format: JSON Dictionary")
+    print("-" * 50)
+    
     try:
-        while True:
-            # Generate the point
-            reading = generate_sensor_data()
-            
-            # Print to console (simulating the 'send' action)
-            print(f"📡 Sending Data: {json.dumps(reading)}")
-            
-            # This is where we will eventually add: 
-            # requests.post('http://localhost:5000/predict', json=reading)
-            
-            # Wait for 1 second
-            time.sleep(1)
+        for reading in generate_sensor_data():
+            # In the next step, we will use 'requests' to send this to the Flask API
+            print(json.dumps(reading, indent=4))
     except KeyboardInterrupt:
-        print("\n🛑 Simulator stopped.")
+        print("\n🛑 Simulator shutdown gracefully.")
 
 if __name__ == "__main__":
-    stream_data()
+    run_simulator()
